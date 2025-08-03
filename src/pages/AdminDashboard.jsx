@@ -30,6 +30,9 @@ import {
     DollarSign,
     Bell
 } from 'lucide-react';
+import StudentManagement from './StudentManagement';
+import TeacherManagement from './TeacherManagement';
+import ClassManagement from './ClassManagement';
 
 const AdminDashboard = () => {
     // ============================================================================
@@ -179,6 +182,15 @@ const AdminDashboard = () => {
                     </div>
                 );
 
+            case 'students':
+                return <StudentManagement />;
+
+            case 'teachers':
+                return <TeacherManagement />;
+
+            case 'classes':
+                return <ClassManagement />;
+
             default:
                 return (
                     <div className="bg-white rounded-lg shadow-md p-6">
@@ -220,8 +232,8 @@ const AdminDashboard = () => {
                             key={item.id}
                             onClick={() => handleMenuClick(item.id)}
                             className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors mb-1 ${activeSection === item.id
-                                    ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                                    : 'text-gray-700 hover:bg-gray-100'
+                                ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
+                                : 'text-gray-700 hover:bg-gray-100'
                                 }`}
                         >
                             <item.icon size={20} />

@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { User, Lock, School, AlertCircle, CheckCircle } from 'lucide-react';
 import AdminDashboard from './pages/AdminDashboard';
+import LandingPage from './pages/LandingPage';
 import './App.css';
 
 // ============================================================================
@@ -22,41 +23,41 @@ const LoginPage = ({ onLoginSuccess }) => {
     setLoading(true);
     setError('');
     setSuccess('');
-    
+
     try {
       const response = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: email.trim( ),
+          email: email.trim(),
           password: password
         })
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok && data.token && data.user) {
         localStorage.setItem('authToken', data.token);
         localStorage.setItem('userData', JSON.stringify(data.user));
-        
+
         const userRole = data.user.role;
         setSuccess(`Welcome ${userRole}! Redirecting to dashboard...`);
-        
+
         setTimeout(() => {
           onLoginSuccess(data.user);
         }, 1500);
-        
+
       } else {
         setError(data.error || 'Invalid email or password. Please check your credentials.');
       }
-      
+
     } catch (error) {
       if (error.message.includes('fetch')) {
         setError('Cannot connect to server. Please check if the backend is running on port 5000.');
       } else {
         setError('An unexpected error occurred. Please try again.');
       }
-      
+
       console.error('Login error:', error);
     } finally {
       setLoading(false);
@@ -141,7 +142,7 @@ const LoginPage = ({ onLoginSuccess }) => {
                   </svg>
                   Signing In...
                 </span>
-               ) : (
+              ) : (
                 'Sign In'
               )}
             </button>
@@ -174,7 +175,7 @@ const App = () => {
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     const userData = localStorage.getItem('userData');
-    
+
     if (token && userData) {
       try {
         const parsedUser = JSON.parse(userData);
@@ -185,7 +186,7 @@ const App = () => {
         localStorage.removeItem('userData');
       }
     }
-    
+
     setLoading(false);
   }, []);
 
@@ -216,40 +217,38 @@ const App = () => {
     <Router>
       <div className="App">
         <Routes>
-          <Route 
-            path="/login" 
+          <Route
+            path="/"
+            element={<LandingPage />}
+          />
+
+          <Route
+            path="/login"
             element={
               !isAuthenticated ? (
                 <LoginPage onLoginSuccess={handleLoginSuccess} />
               ) : (
                 <Navigate to="/dashboard" replace />
               )
-            } 
+            }
           />
-          
-          <Route 
-            path="/dashboard" 
+
+          <Route
+            path="/dashboard"
             element={
               isAuthenticated ? (
                 <AdminDashboard user={user} onLogout={handleLogout} />
               ) : (
                 <Navigate to="/login" replace />
               )
-            } 
+            }
           />
-          
-          <Route 
-            path="/" 
+
+          <Route
+            path="*"
             element={
-              <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
-            } 
-          />
-          
-          <Route 
-            path="*" 
-            element={
-              <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
-            } 
+              <Navigate to="/" replace />
+            }
           />
         </Routes>
       </div>
