@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Test Authentication</title>
+</head>
+
+<body>
+    <h1>School Management System - Auth Test</h1>
+
+    <div>
+        <h2>Register Admin User</h2>
+        <button onclick="registerAdmin()">Register Admin</button>
+        <div id="registerResult"></div>
+    </div>
+
+    <div>
+        <h2>Login</h2>
+        <button onclick="loginAdmin()">Login Admin</button>
+        <div id="loginResult"></div>
+    </div>
+
+    <script>
+        async function registerAdmin() {
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@school.com',
+                        password: 'admin123',
+                        role: 'ADMIN',
+                        firstName: 'School',
+                        lastName: 'Administrator',
+                        phone: '+23276123456'
+                    })
+                });
+
+                const data = await response.json();
+                document.getElementById('registerResult').innerHTML =
+                    '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('registerResult').innerHTML = 'Error: ' + error.message;
+            }
+        }
+
+        async function loginAdmin() {
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@school.com',
+                        password: 'admin123'
+                    })
+                });
+
+                const data = await response.json();
+                document.getElementById('loginResult').innerHTML =
+                    '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('loginResult').innerHTML = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+
+</html>

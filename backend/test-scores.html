@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Score Entry & Report Cards</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        button { padding: 10px 15px; margin: 5px; background: #17a2b8; color: white; border: none; cursor: pointer; border-radius: 3px; }
+        button:hover { background: #138496; }
+        .result { margin: 10px 0; padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 3px; max-height: 400px; overflow-y: auto; }
+        pre { white-space: pre-wrap; font-size: 12px; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        .info { background: #d1ecf1; border-color: #bee5eb; }
+        .highlight { background: #fff3cd; border-color: #ffeaa7; }
+    </style>
+</head>
+<body>
+    <div class="section">
+        <h2>🔧 Debug: Check All Variables</h2>
+        <button onclick="debugVariables()">Show All Current Variables</button>
+        <div id="debugVariablesResult" class="result"></div>
+    </div>
+
+
+    <div class="section">
+        <h2>Debug: Check Current IDs</h2>
+        <button onclick="checkIds()">Show Current IDs</button>
+        <div id="debugResult" class="result"></div>
+    </div>
+
+
+    <h1>📊 Score Entry & Report Card System Test</h1>
+    
+    <div class="section">
+        <h2>Step 1: Login as Admin</h2>
+        <button onclick="loginAdmin()">Login Admin</button>
+        <div id="loginResult" class="result"></div>
+    </div>
+
+<div class="section">
+    <h2>Step 2: Create Test Data</h2>
+    <button onclick="createTestData()">Create Students, Teachers & Classes</button>
+    <div id="testDataResult" class="result"></div>
+</div>
+
+    
+    <div class="section">
+        <h2>Step 3: Create Test Subjects</h2>
+        <button onclick="createSubjects()">Create Mathematics & English</button>
+        <div id="subjectsResult" class="result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>Step 4: Enter Student Scores</h2>
+        <button onclick="enterScores()">Enter Test Scores</button>
+        <div id="scoresResult" class="result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>Step 5: View Student Scores</h2>
+        <button onclick="getStudentScores()">Get Student Academic Summary</button>
+        <div id="studentScoresResult" class="result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>Step 6: View Class Rankings</h2>
+        <button onclick="getClassRankings()">Get Class Rankings</button>
+        <div id="classRankingsResult" class="result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>Step 7: Generate Report Card</h2>
+        <button onclick="generateReportCard()">Generate Comprehensive Report Card</button>
+        <div id="reportCardResult" class="result"></div>
+    </div>
+
+    <script>
+    // ============================================================================
+    // GLOBAL VARIABLES - Store authentication tokens and test data IDs
+    // ============================================================================
+    let adminToken = '';        // JWT token for admin authentication
+    let studentId = '';         // ID of test student for score entry
+    let classId = '';          // ID of test class
+    let teacherId = '';        // ID of test teacher
+    let mathSubjectId = '';    // ID of Mathematics subject
+    let englishSubjectId = ''; // ID of English subject
+
+    // ============================================================================
+    // STEP 1: ADMIN LOGIN - Get authentication token
+    // ============================================================================
+    async function loginAdmin() {
+        try {
+            const response = await fetch('http://localhost:5000/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: 'admin@school.com',
+                    password: 'admin123'
+                } )
+            });
+            
+            const data = await response.json();
+            if (data.token) {
+                adminToken = data.token; // Store token for subsequent requests
+                document.getElementById('loginResult').innerHTML = 
+                    '<div class="success">✅ Login successful! Ready to create test data.</div>' +
+                    '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } else {
+                document.getElementById('loginResult').innerHTML = 
+                    '<div class="error">❌ Login failed: ' + JSON.stringify(data) + '</div>';
+            }
+        } catch (error) {
+            document.getElementById('loginResult').innerHTML = 
+                '<div class="error">❌ Error: ' + error.message + '</div>';
+        }
+    }
+
+    // ============================================================================
+    // STEP 2: CREATE TEST DATA - Students, Teachers, Classes
+    // ============================================================================
+    
+async function createTestData() {
+    if (!adminToken) {
+        document.getElementById('testDataResult').innerHTML = 
+            '<div class="error">❌ Please login first!</div>';
+        return;
+    }
+    
+    try {
+        const response = await fetch('http://localhost:5000/api/test-data/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${adminToken}`
+            }
+        } );
+        
+        const data = await response.json();
+        
+        if (data.message) {
+            // *** THIS LINE IS CRUCIAL ***
+            await getTestDataIds();
+            
+            document.getElementById('testDataResult').innerHTML = 
+                '<div class="success">✅ Test data created successfully!</div>' +
+                '<div class="info">📋 Created: 1 Class, 1 Teacher, 3 Students</div>' +
+                '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+        }
+    } catch (error) {
+        document.getElementById('testDataResult').innerHTML = 
+            '<div class="error">❌ Error: ' + error.message + '</div>';
+    }
+}
+
+
+async function getTestDataIds() {
+    try {
+        const response = await fetch('http://localhost:5000/api/test-data/ids', {
+            headers: { 'Authorization': `Bearer ${adminToken}` }
+        } );
+        
+        const data = await response.json();
+        
+        teacherId = data.teacherId;
+        classId = data.classId;
+        if (data.students && data.students.length > 0) {
+            studentId = data.students[0].id;
+        }
+        
+        console.log('IDs loaded:', { studentId, teacherId, classId });
+    } catch (error) {
+        console.error('Failed to get test data IDs:', error);
+    }
+}
+
+
+    // ============================================================================
+    // HELPER FUNCTION: Get Test Data IDs for Score Entry
+    // ============================================================================
+    async function getTestDataIds() {
+        try {
+            const response = await fetch('http://localhost:5000/api/test-data/ids', {
+                headers: { 'Authorization': `Bearer ${adminToken}` }
+            } );
+            
+            const data = await response.json();
+            
+            // Store IDs for use in score entry
+            teacherId = data.teacherId;
+            classId = data.classId;
+            if (data.students && data.students.length > 0) {
+                studentId = data.students[0].id; // Use first student for testing
+            }
+            
+            console.log('Test data IDs loaded:', data);
+        } catch (error) {
+            console.error('Failed to get test data IDs:', error);
+        }
+    }
+
+    // Keep all your other functions (createSubjects, enterScores, etc.) exactly the same
+    // Just add the new createTestData function and helper function above
+
+  async function createSubjects() {
+    if (!adminToken) {
+        document.getElementById('subjectsResult').innerHTML = 
+            '<div class="error">❌ Please login first!</div>';
+        return;
+    }
+    
+    try {
+        console.log('=== CREATING SUBJECTS ===');
+        
+        // Create Mathematics subject with timestamp to make it unique
+        const timestamp = Date.now();
+        const mathResponse = await fetch('http://localhost:5000/api/subjects', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${adminToken}`
+            },
+            body: JSON.stringify({
+                name: `Mathematics_${timestamp}`,
+                code: `MATH_${timestamp}`
+            } )
+        });
+        
+        const mathData = await mathResponse.json();
+        console.log('Math response:', mathData);
+        
+        if (mathData.subject && mathData.subject.id) {
+            mathSubjectId = mathData.subject.id;
+            console.log('Math subject ID stored:', mathSubjectId);
+        }
+
+        // Create English subject with timestamp
+        const englishResponse = await fetch('http://localhost:5000/api/subjects', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${adminToken}`
+            },
+            body: JSON.stringify({
+                name: `English_${timestamp}`,
+                code: `ENG_${timestamp}`
+            } )
+        });
+        
+        const englishData = await englishResponse.json();
+        console.log('English response:', englishData);
+        
+        if (englishData.subject && englishData.subject.id) {
+            englishSubjectId = englishData.subject.id;
+            console.log('English subject ID stored:', englishSubjectId);
+        }
+
+        document.getElementById('subjectsResult').innerHTML = 
+            '<div class="success">✅ Subjects created with unique names!</div>' +
+            '<div class="info">📚 Math ID: ' + (mathSubjectId || 'FAILED') + '</div>' +
+            '<div class="info">📚 English ID: ' + (englishSubjectId || 'FAILED') + '</div>' +
+            '<pre>Mathematics: ' + JSON.stringify(mathData, null, 2) + '</pre>' +
+            '<pre>English: ' + JSON.stringify(englishData, null, 2) + '</pre>';
+            
+    } catch (error) {
+        console.log('ERROR:', error);
+        document.getElementById('subjectsResult').innerHTML = 
+            '<div class="error">❌ Error: ' + error.message + '</div>';
+    }
+}
+
+
+
+
+    // Keep all your other existing functions (enterScores, getStudentScores, etc.) exactly as they are
+    // The rest of your JavaScript functions can stay the same
+
+
+
+    function checkIds() {
+    document.getElementById('debugResult').innerHTML = 
+        '<div class="info">Current IDs:</div>' +
+        '<pre>adminToken: ' + (adminToken ? 'SET' : 'NOT SET') + '</pre>' +
+        '<pre>studentId: ' + studentId + '</pre>' +
+        '<pre>teacherId: ' + teacherId + '</pre>' +
+        '<pre>classId: ' + classId + '</pre>' +
+        '<pre>mathSubjectId: ' + mathSubjectId + '</pre>' +
+        '<pre>englishSubjectId: ' + englishSubjectId + '</pre>';
+}
+
+// ============================================================================
+// STEP 4: SCORE ENTRY FUNCTION
+// ============================================================================
+// Enters test scores for a student in Mathematics and English subjects
+// Includes automatic grade calculation and validation
+async function enterScores() {
+    // Validate that all required data is available before proceeding
+    if (!adminToken || !studentId || !mathSubjectId || !englishSubjectId || !teacherId) {
+        document.getElementById('scoresResult').innerHTML = 
+            '<div class="error">❌ Please complete previous steps first!</div>' +
+            '<div class="error">Missing: ' + [
+                !adminToken && 'Admin login',
+                !studentId && 'Student data', 
+                !mathSubjectId && 'Math subject',
+                !englishSubjectId && 'English subject',
+                !teacherId && 'Teacher data'
+            ].filter(Boolean).join(', ') + '</div>';
+        return;
+    }
+
+    try {
+        // Enter Mathematics score (85/100 = Grade B)
+        // This demonstrates score entry with automatic grade calculation
+        const mathScoreResponse = await fetch('http://localhost:5000/api/scores/enter', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${adminToken}` // Include JWT token for authentication
+            },
+            body: JSON.stringify({
+                studentId: studentId,           // ID of the student receiving the score
+                subjectId: mathSubjectId,       // ID of Mathematics subject
+                teacherId: teacherId,           // ID of teacher entering the score
+                term: 'FIRST',                  // Academic term (FIRST, SECOND, THIRD )
+                year: 2025,                     // Academic year
+                score: 85,                      // Actual score achieved
+                maxScore: 100,                  // Maximum possible score
+                comments: 'Good performance in mathematics' // Teacher's comments
+            })
+        });
+        
+        const mathScoreData = await mathScoreResponse.json();
+
+        // Enter English score (92/100 = Grade A)
+        // This demonstrates entering a second subject score for the same student
+        const englishScoreResponse = await fetch('http://localhost:5000/api/scores/enter', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${adminToken}` // Same authentication token
+            },
+            body: JSON.stringify({
+                studentId: studentId,           // Same student as Mathematics
+                subjectId: englishSubjectId,    // ID of English subject
+                teacherId: teacherId,           // Same teacher (could be different )
+                term: 'FIRST',                  // Same term
+                year: 2025,                     // Same year
+                score: 92,                      // Higher score (A grade)
+                maxScore: 100,                  // Same max score
+                comments: 'Excellent performance in English' // Positive feedback
+            })
+        });
+        
+        const englishScoreData = await englishScoreResponse.json();
+
+        // Display success message with grade information
+        // The backend automatically calculates letter grades based on percentage
+        document.getElementById('scoresResult').innerHTML = 
+            '<div class="success">✅ Scores entered successfully with automatic grade calculation!</div>' +
+            '<div class="highlight">📊 Mathematics: 85/100 (Grade: B)</div>' +
+            '<div class="highlight">📊 English: 92/100 (Grade: A)</div>' +
+            '<pre>' + JSON.stringify({math: mathScoreData, english: englishScoreData}, null, 2) + '</pre>';
+            
+    } catch (error) {
+        // Handle any network or server errors
+        document.getElementById('scoresResult').innerHTML = 
+            '<div class="error">❌ Error: ' + error.message + '</div>';
+    }
+}
+
+// ============================================================================
+// STEP 5: STUDENT ACADEMIC SUMMARY FUNCTION
+// ============================================================================
+// Retrieves and displays a student's academic performance summary
+// Shows overall average, grade, and individual subject performance
+async function getStudentScores() {
+    // Ensure required authentication and student data is available
+    if (!adminToken || !studentId) {
+        document.getElementById('studentScoresResult').innerHTML = 
+            '<div class="error">❌ Please complete previous steps first!</div>';
+        return;
+    }
+    
+    try {
+        // Fetch student's academic summary for the specified term and year
+        // URL pattern: /api/scores/student/{studentId}/term/{term}/year/{year}
+        const response = await fetch(`http://localhost:5000/api/scores/student/${studentId}/term/FIRST/year/2025`, {
+            headers: { 'Authorization': `Bearer ${adminToken}` } // Authentication required
+        } );
+        
+        const data = await response.json();
+        
+        // Display the academic summary with overall performance metrics
+        // The backend calculates overall average and assigns letter grade
+        document.getElementById('studentScoresResult').innerHTML = 
+            '<div class="success">✅ Student academic summary retrieved!</div>' +
+            '<div class="highlight">📈 Overall Average: ' + data.summary.average + ' (Grade: ' + data.summary.overallGrade + ')</div>' +
+            '<pre>' + JSON.stringify(data, null, 2) + '</pre>'; // Full data for debugging
+            
+    } catch (error) {
+        // Handle API errors (network issues, authentication failures, etc.)
+        document.getElementById('studentScoresResult').innerHTML = 
+            '<div class="error">❌ Error: ' + error.message + '</div>';
+    }
+}
+
+// ============================================================================
+// STEP 6: CLASS RANKINGS FUNCTION
+// ============================================================================
+// Retrieves class-wide performance data and student position rankings
+// Shows class statistics and individual student positions
+async function getClassRankings() {
+    // Validate that authentication and class data is available
+    if (!adminToken || !classId) {
+        document.getElementById('classRankingsResult').innerHTML = 
+            '<div class="error">❌ Please complete previous steps first!</div>';
+        return;
+    }
+    
+    try {
+        // Fetch class performance data and rankings for the specified term/year
+        // URL pattern: /api/scores/class/{classId}/term/{term}/year/{year}
+        const response = await fetch(`http://localhost:5000/api/scores/class/${classId}/term/FIRST/year/2025`, {
+            headers: { 'Authorization': `Bearer ${adminToken}` } // Admin access required
+        } );
+        
+        const data = await response.json();
+        
+        // Display class statistics and ranking information
+        // Backend calculates class average and ranks all students by performance
+        document.getElementById('classRankingsResult').innerHTML = 
+            '<div class="success">✅ Class rankings with positions calculated!</div>' +
+            '<div class="highlight">🏆 Class Average: ' + data.classStatistics.classAverage + '</div>' +
+            '<div class="highlight">👥 Total Students: ' + data.totalStudents + '</div>' +
+            '<pre>' + JSON.stringify(data, null, 2) + '</pre>'; // Full ranking data
+            
+    } catch (error) {
+        // Handle errors in fetching class data
+        document.getElementById('classRankingsResult').innerHTML = 
+            '<div class="error">❌ Error: ' + error.message + '</div>';
+    }
+}
+
+// ============================================================================
+// STEP 7: COMPREHENSIVE REPORT CARD GENERATION
+// ============================================================================
+// Generates a complete academic report card for a student
+// Includes academic performance, position ranking, and attendance summary
+async function generateReportCard() {
+    // Ensure authentication and student identification is available
+    if (!adminToken || !studentId) {
+        document.getElementById('reportCardResult').innerHTML = 
+            '<div class="error">❌ Please complete previous steps first!</div>';
+        return;
+    }
+    
+    try {
+        // Generate comprehensive report card for the student
+        // URL pattern: /api/scores/report/{studentId}/term/{term}/year/{year}
+        const response = await fetch(`http://localhost:5000/api/scores/report/${studentId}/term/FIRST/year/2025`, {
+            headers: { 'Authorization': `Bearer ${adminToken}` } // Authentication required
+        } );
+        
+        const data = await response.json();
+        
+        // Display comprehensive report card information
+        // Includes academic performance, class position, and attendance data
+        document.getElementById('reportCardResult').innerHTML = 
+            '<div class="success">✅ Comprehensive report card generated!</div>' +
+            // Position ranking with ordinal suffix (1st, 2nd, 3rd, etc.)
+            '<div class="highlight">🎓 Position: ' + data.reportCard.academicPerformance.summary.positionSuffix + ' out of ' + data.reportCard.academicPerformance.summary.totalStudentsInClass + '</div>' +
+            // Overall academic grade and percentage
+            '<div class="highlight">📊 Overall Grade: ' + data.reportCard.academicPerformance.summary.overallGrade + ' (' + data.reportCard.academicPerformance.summary.overallAverage + '%)</div>' +
+            // Attendance percentage (important for complete academic assessment)
+            '<div class="highlight">📅 Attendance: ' + data.reportCard.attendanceSummary.attendancePercentage + '%</div>' +
+            '<pre>' + JSON.stringify(data, null, 2) + '</pre>'; // Complete report data
+            
+    } catch (error) {
+        // Handle report generation errors
+        document.getElementById('reportCardResult').innerHTML = 
+            '<div class="error">❌ Error: ' + error.message + '</div>';
+    }
+}
+
+// ============================================================================
+// NOTES FOR FUTURE DEVELOPERS:
+// ============================================================================
+// 1. All functions require adminToken for authentication
+// 2. Score entry automatically calculates letter grades (A-F) based on percentage
+// 3. Position rankings handle ties appropriately and use ordinal suffixes
+// 4. Report cards include both academic and attendance data
+// 5. Error handling displays user-friendly messages for debugging
+// 6. All API calls use async/await for better error handling
+// 7. JSON responses are displayed for debugging and verification
+// 8. Functions validate required data before making API calls
+// ============================================================================
+
+
+
+// ============================================================================
+// DEBUG FUNCTION: Check all current variable values
+// ============================================================================
+function debugVariables() {
+    console.log('=== CURRENT VARIABLES ===');
+    console.log('adminToken:', adminToken ? 'SET (length: ' + adminToken.length + ')' : 'NOT SET');
+    console.log('studentId:', studentId || 'NOT SET');
+    console.log('teacherId:', teacherId || 'NOT SET');
+    console.log('classId:', classId || 'NOT SET');
+    console.log('mathSubjectId:', mathSubjectId || 'NOT SET');
+    console.log('englishSubjectId:', englishSubjectId || 'NOT SET');
+    
+    document.getElementById('debugVariablesResult').innerHTML = 
+        '<div class="info">Current Variable Status:</div>' +
+        '<pre>adminToken: ' + (adminToken ? 'SET ✅' : 'NOT SET ❌') + '</pre>' +
+        '<pre>studentId: ' + (studentId || 'NOT SET ❌') + '</pre>' +
+        '<pre>teacherId: ' + (teacherId || 'NOT SET ❌') + '</pre>' +
+        '<pre>classId: ' + (classId || 'NOT SET ❌') + '</pre>' +
+        '<pre>mathSubjectId: ' + (mathSubjectId || 'NOT SET ❌') + '</pre>' +
+        '<pre>englishSubjectId: ' + (englishSubjectId || 'NOT SET ❌') + '</pre>';
+}
+
+
+</script>
+
+</body>
+</html>

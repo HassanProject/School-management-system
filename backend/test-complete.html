@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Complete Student Management Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 3px; }
+        button:hover { background: #0056b3; }
+        .result { margin: 10px 0; padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 3px; max-height: 300px; overflow-y: auto; }
+        pre { white-space: pre-wrap; font-size: 12px; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+    </style>
+</head>
+<body>
+    <h1>🏫 School Management System - Complete Test</h1>
+    
+    <div class="section">
+        <h2>Step 1: Login as Admin</h2>
+        <button onclick="loginAdmin()">Login Admin</button>
+        <div id="loginResult" class="result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>Step 2: Create a Class</h2>
+        <button onclick="createClass()">Create Grade 1A</button>
+        <div id="classResult" class="result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>Step 3: Create a Student</h2>
+        <button onclick="createStudent()">Create Student (John Doe)</button>
+        <div id="studentResult" class="result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>Step 4: Search Student by ID (Your Special Feature!)</h2>
+        <button onclick="searchStudent()">Search Student ID: STU001</button>
+        <div id="searchResult" class="result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>Step 5: Get All Students</h2>
+        <button onclick="getAllStudents()">Get All Students</button>
+        <div id="allStudentsResult" class="result"></div>
+    </div>
+
+    <script>
+        let adminToken = '';
+        let classId = '';
+
+        async function loginAdmin() {
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'admin@school.com',
+                        password: 'admin123'
+                    } )
+                });
+                
+                const data = await response.json();
+                if (data.token) {
+                    adminToken = data.token;
+                    document.getElementById('loginResult').innerHTML = 
+                        '<div class="success">✅ Login successful! Token received.</div>';
+                } else {
+                    document.getElementById('loginResult').innerHTML = 
+                        '<div class="error">❌ Login failed: ' + JSON.stringify(data) + '</div>';
+                }
+            } catch (error) {
+                document.getElementById('loginResult').innerHTML = 
+                    '<div class="error">❌ Error: ' + error.message + '</div>';
+            }
+        }
+
+        async function createClass() {
+            if (!adminToken) {
+                document.getElementById('classResult').innerHTML = 
+                    '<div class="error">❌ Please login first!</div>';
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/classes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminToken}`
+                    },
+                    body: JSON.stringify({
+                        name: 'Grade 1A',
+                        year: 2025
+                    } )
+                });
+                
+                const data = await response.json();
+                if (data.class) {
+                    classId = data.class.id;
+                    document.getElementById('classResult').innerHTML = 
+                        '<div class="success">✅ Class created successfully!</div><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                } else {
+                    document.getElementById('classResult').innerHTML = 
+                        '<div class="error">❌ Failed to create class: ' + JSON.stringify(data) + '</div>';
+                }
+            } catch (error) {
+                document.getElementById('classResult').innerHTML = 
+                    '<div class="error">❌ Error: ' + error.message + '</div>';
+            }
+        }
+
+        async function createStudent() {
+            if (!adminToken) {
+                document.getElementById('studentResult').innerHTML = 
+                    '<div class="error">❌ Please login first!</div>';
+                return;
+            }
+            
+            if (!classId) {
+                document.getElementById('studentResult').innerHTML = 
+                    '<div class="error">❌ Please create a class first!</div>';
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/students', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminToken}`
+                    },
+                    body: JSON.stringify({
+                        email: 'john.doe@school.com',
+                        password: 'student123',
+                        firstName: 'John',
+                        lastName: 'Doe',
+                        phone: '+23276111111',
+                        studentId: 'STU001',
+                        dateOfBirth: '2010-05-15',
+                        gender: 'MALE',
+                        classId: classId,
+                        year: 2025
+                    } )
+                });
+                
+                const data = await response.json();
+                if (data.student) {
+                    document.getElementById('studentResult').innerHTML = 
+                        '<div class="success">✅ Student created successfully!</div><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                } else {
+                    document.getElementById('studentResult').innerHTML = 
+                        '<div class="error">❌ Failed to create student: ' + JSON.stringify(data) + '</div>';
+                }
+            } catch (error) {
+                document.getElementById('studentResult').innerHTML = 
+                    '<div class="error">❌ Error: ' + error.message + '</div>';
+            }
+        }
+
+        async function searchStudent() {
+            try {
+                const response = await fetch('http://localhost:5000/api/students/search/STU001' );
+                const data = await response.json();
+                
+                if (data.studentInfo) {
+                    document.getElementById('searchResult').innerHTML = 
+                        '<div class="success">✅ Student found! Here\'s the comprehensive information:</div><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                } else {
+                    document.getElementById('searchResult').innerHTML = 
+                        '<div class="error">❌ Student not found: ' + JSON.stringify(data) + '</div>';
+                }
+            } catch (error) {
+                document.getElementById('searchResult').innerHTML = 
+                    '<div class="error">❌ Error: ' + error.message + '</div>';
+            }
+        }
+
+        async function getAllStudents() {
+            if (!adminToken) {
+                document.getElementById('allStudentsResult').innerHTML = 
+                    '<div class="error">❌ Please login first!</div>';
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/students', {
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                } );
+                
+                const data = await response.json();
+                if (data.students) {
+                    document.getElementById('allStudentsResult').innerHTML = 
+                        '<div class="success">✅ Found ' + data.students.length + ' students:</div><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                } else {
+                    document.getElementById('allStudentsResult').innerHTML = 
+                        '<div class="error">❌ Failed to get students: ' + JSON.stringify(data) + '</div>';
+                }
+            } catch (error) {
+                document.getElementById('allStudentsResult').innerHTML = 
+                    '<div class="error">❌ Error: ' + error.message + '</div>';
+            }
+        }
+    </script>
+</body>
+</html>

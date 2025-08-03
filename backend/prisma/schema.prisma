@@ -1,0 +1,62 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  role      UserRole
+  firstName String
+  lastName  String
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  TEACHER
+  PARENT
+  STUDENT
+}
+
+model Class {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  year      Int
+  teacherId String?
+  createdAt DateTime @default(now())
+  
+  @@map("classes")
+}
+
+model Subject {
+  id      String @id @default(cuid())
+  name    String
+  code    String @unique
+  classId String?
+  
+  @@map("subjects")
+}
+
+model SchoolSettings {
+  id                String @id @default(cuid())
+  schoolName        String
+  termlyFeeAmount   Float
+  currentTerm       String
+  currentYear       Int
+  updatedAt         DateTime @updatedAt
+
+  @@map("school_settings")
+} 

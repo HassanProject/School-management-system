@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Student Management</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin: 10px 0; padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; }
+        pre { white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>Student Management System Test</h1>
+    
+    <div class="section">
+        <h2>1. Create Test Class</h2>
+        <button onclick="createClass()">Create Grade 1A Class</button>
+        <div id="classResult" class="result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>2. Create Student</h2>
+        <button onclick="createStudent()">Create Test Student</button>
+        <div id="studentResult" class="result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>3. Search Student by ID</h2>
+        <button onclick="searchStudent()">Search Student (ID: STU001)</button>
+        <div id="searchResult" class="result"></div>
+    </div>
+    
+    <div class="section">
+        <h2>4. Get All Students</h2>
+        <button onclick="getAllStudents()">Get All Students</button>
+        <div id="allStudentsResult" class="result"></div>
+    </div>
+
+    <script>
+        // Get admin token (you'll need to login first)
+        let adminToken = '';
+        
+        // Login first to get token
+        async function loginAdmin() {
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'admin@school.com',
+                        password: 'admin123'
+                    } )
+                });
+                const data = await response.json();
+                adminToken = data.token;
+                return data.token;
+            } catch (error) {
+                console.error('Login failed:', error);
+                return null;
+            }
+        }
+
+        async function createClass() {
+            if (!adminToken) await loginAdmin();
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/classes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminToken}`
+                    },
+                    body: JSON.stringify({
+                        name: 'Grade 1A',
+                        year: 2025
+                    } )
+                });
+                
+                const data = await response.json();
+                document.getElementById('classResult').innerHTML = 
+                    '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('classResult').innerHTML = 'Error: ' + error.message;
+            }
+        }
+
+        async function createStudent() {
+            if (!adminToken) await loginAdmin();
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/students', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminToken}`
+                    },
+                    body: JSON.stringify({
+                        email: 'student1@school.com',
+                        password: 'student123',
+                        firstName: 'John',
+                        lastName: 'Doe',
+                        phone: '+23276111111',
+                        studentId: 'STU001',
+                        dateOfBirth: '2010-05-15',
+                        gender: 'MALE',
+                        classId: 'class_id_here', // We'll need to get this from the class creation
+                        year: 2025
+                    } )
+                });
+                
+                const data = await response.json();
+                document.getElementById('studentResult').innerHTML = 
+                    '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('studentResult').innerHTML = 'Error: ' + error.message;
+            }
+        }
+
+        async function searchStudent() {
+            try {
+                const response = await fetch('http://localhost:5000/api/students/search/STU001' );
+                const data = await response.json();
+                document.getElementById('searchResult').innerHTML = 
+                    '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('searchResult').innerHTML = 'Error: ' + error.message;
+            }
+        }
+
+        async function getAllStudents() {
+            if (!adminToken) await loginAdmin();
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/students', {
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                } );
+                const data = await response.json();
+                document.getElementById('allStudentsResult').innerHTML = 
+                    '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('allStudentsResult').innerHTML = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
